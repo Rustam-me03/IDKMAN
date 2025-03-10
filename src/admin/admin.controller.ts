@@ -15,8 +15,10 @@ export class AdminController {
   }
 
   @UseGuards(AdminRefreshTokenGuard, SuperAdminGuard)
-  @Get()
+  @Get('all')
   findAll() {
+    console.log(123);
+    
     return this.adminService.findAll();
   }
 
