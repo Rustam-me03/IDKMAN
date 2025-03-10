@@ -8,16 +8,16 @@ import { SuperAdminGuard } from '../common/guards';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @UseGuards(AdminRefreshTokenGuard, SuperAdminGuard)
+  @UseGuards(AdminRefreshTokenGuard)
   @Post()
   create(@Body() createAdminDto: CreateAdminDto) {
     return this.adminService.create(createAdminDto);
   }
 
-  @UseGuards(AdminRefreshTokenGuard, SuperAdminGuard)
+  @UseGuards(AdminRefreshTokenGuard)
   @Get('all')
   findAll() {
-    console.log(123);
+    console.log("idk")
     
     return this.adminService.findAll();
   }

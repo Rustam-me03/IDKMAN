@@ -13,7 +13,7 @@ export const AdminCookieExtractor: JwtFromRequestFunction = (req: Request) => {
 };
 
 @Injectable()
-export class AdminRefreshTokenCookieStrategy extends PassportStrategy(
+export class SuperAdminRefreshTokenCookieStrategy extends PassportStrategy(
     Strategy,
     "admin-refresh-jwt"
 ) {
@@ -31,7 +31,7 @@ export class AdminRefreshTokenCookieStrategy extends PassportStrategy(
         if (!refreshToken) {
             throw new ForbiddenException("Refresh token noto'g'ri");
         }
-        if(payload.is_creator != false){
+        if(payload.is_creator != true){
             throw new ForbiddenException("Sizga ruxsat yo'q");
         }
         return { ...payload, refreshToken };

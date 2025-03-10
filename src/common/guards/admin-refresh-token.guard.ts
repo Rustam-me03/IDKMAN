@@ -5,7 +5,7 @@ import { ExecutionContext } from '@nestjs/common';
 import { Observable } from 'rxjs';
 
 @Injectable()
-export class AdminRefreshTokenGuard extends AuthGuard('refresh-jwt') {
+export class AdminRefreshTokenGuard extends AuthGuard('admin-refresh-jwt') {
   constructor(private reflector: Reflector) {
     super();
   }

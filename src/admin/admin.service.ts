@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateAdminDto, UpdateAdminDto } from './dto';
 import { Admin } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class AdminService {
@@ -21,9 +22,17 @@ export class AdminService {
       password: createAdminDto.password,
       confirm_password: createAdminDto.confirm_password,
     };
-    return this.prismaService.admin.create({
-      data,
-    });
+
+    try {
+      return await this.prismaService.admin.create({
+        data,
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new BadRequestException('Unique constraint failed on the fields: (`id`)');
+      }
+      throw error;
+    }
   }
 
   findAll() {

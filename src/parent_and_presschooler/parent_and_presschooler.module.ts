@@ -6,6 +6,18 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 @Module({
   imports: [PrismaModule],
   controllers: [ParentAndPresschoolerController],
-  providers: [ParentAndPresschoolerService],
+  providers: [
+    {
+      provide: ParentAndPresschoolerService,
+      useFactory: async () => {
+        try {
+          return new ParentAndPresschoolerService();
+        } catch (error) {
+          console.error('Error creating ParentAndPresschoolerService:', error);
+          throw error;
+        }
+      },
+    },
+  ],
 })
 export class ParentAndPresschoolerModule {}

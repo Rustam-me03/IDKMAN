@@ -1,9 +1,9 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
-import { TeacherService } from 'src/teacher/teacher.service';
+import { AdminService } from 'src/admin/admin.service';
 
 @Injectable()
 export class SuperAdminGuard implements CanActivate {
-    constructor(private teacherService: TeacherService) {}
+    constructor(private adminService: AdminService) {} // Corrected service injection
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
@@ -13,22 +13,20 @@ export class SuperAdminGuard implements CanActivate {
             throw new UnauthorizedException('Foydalanuvchi topilmadi');
         }
 
-        try {
-            // Refresh user data
-            const refreshedUser = await this.refreshUser(user);
+        const refreshedUser = await this.refreshUser(user);
 
-            if (!refreshedUser.is_creator) {
-                throw new ForbiddenException("Sizda ruxsat yo'q");
-            }
-
-            return true;
-        } catch (error) {
-            throw new UnauthorizedException('Foydalanuvchi ma\'lumotlarini yangilashda xatolik yuz berdi');
+        if (!refreshedUser || !refreshedUser.is_creator) {
+            throw new ForbiddenException("Sizda ruxsat yo'q");
         }
+
+        return true;
     }
 
     private async refreshUser(user: any): Promise<any> {
-        // Logic to refresh user data
-        return this.teacherService.findOne(user.id); // Adjust the method as necessary
+        const foundUser = await this.adminService.findOne(user.id); // Corrected service method call
+        if (!foundUser) {
+            throw new UnauthorizedException("Foydalanuvchi ma'lumotlari yangilanmadi");
+        }
+        return foundUser;
     }
 }
