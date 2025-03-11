@@ -11,7 +11,7 @@ export class AdminService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly jwtService: JwtService
-  ) {}
+  ) { }
 
   async create(createAdminDto: CreateAdminDto) {
     const hashed_password = await bcrypt.hash(createAdminDto.password, 10);
@@ -40,8 +40,16 @@ export class AdminService {
   }
 
   findOne(id: number) {
-    return this.prismaService.admin.findUnique({ where: { id } });
+    if (!id || isNaN(id)) {
+      throw new BadRequestException("Invalid admin ID");
+    }
+
+    return this.prismaService.admin.findUnique({
+      where: { id: Number(id) },
+    });
   }
+
+
 
   findByEmail(email: string) {
     return this.prismaService.admin.findUnique({ where: { email } });

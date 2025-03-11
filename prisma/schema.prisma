@@ -138,7 +138,7 @@ model Teacher {
   birthday          DateTime
   old_work          String?
   phone_number      String
-  hire_date         DateTime
+  hire_date         DateTime @default(now())
   email             String  @unique
   gender            String
   password          String

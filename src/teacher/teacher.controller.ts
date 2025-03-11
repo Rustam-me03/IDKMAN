@@ -12,7 +12,7 @@ export class TeacherController {
     return this.teacherService.create(createTeacherDto);
   }
 
-  @Get()
+  @Get("all")
   findAll() {
     return this.teacherService.findAll();
   }

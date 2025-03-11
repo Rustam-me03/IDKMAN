@@ -3,6 +3,7 @@ import {
     ForbiddenException,
     Injectable,
     InternalServerErrorException,
+    NotFoundException,
     UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
@@ -21,7 +22,7 @@ import { Teacher } from "@prisma/client";
 @Injectable()
 export class AuthService {
     constructor(
-        private readonly userService: TeacherService,
+        private readonly teacherService: TeacherService,
         private readonly adminService: AdminService,
         private readonly jwtService: JwtService,
         private readonly prismaService: PrismaService
@@ -50,18 +51,18 @@ export class AuthService {
     }
 
     async signUp(createTeacherDto: CreateTeacherDto) {
-        const candidate = await this.userService.findByEmail(
+        const candidate = await this.teacherService.findByEmail(
             createTeacherDto.email
         );
         if (candidate) {
             throw new BadRequestException("Bunday foydalanuvchi mavjud");
         }
-        const newUser = await this.userService.create(createTeacherDto);
+        const newteacher = await this.teacherService.create(createTeacherDto);
 
         const response = {
             message:
                 "Tabriklayman tizimga qo'shildingin",
-            userId: newUser.id,
+            teacherId: newteacher.id,
         };
 
         return response;
@@ -74,67 +75,74 @@ export class AuthService {
             throw new BadRequestException();
         }
 
-        const user = await this.userService.findByEmail(email);
+        const teacher = await this.teacherService.findByEmail(email);
 
-        if (!user) {
+        if (!teacher) {
             throw new UnauthorizedException("Invalid Email or password");
         }
         const validPassword = await bcrypt.compare(
             teacherSignInDto.password,
-            user.hashedPassword
+            teacher.password
         );
         if (!validPassword) {
             throw new UnauthorizedException("Invalid Email or password");
         }
 
-        const tokens = await this.getTokens(user);
+        const tokens = await this.getTokens(teacher);
 
         const hashed_refresh_token = await bcrypt.hash(tokens.refresh_token, 7);
 
-        const updateUser = await this.userService.updateRefreshToken(
-            user.id,
+        const updateteacher = await this.teacherService.updateRefreshToken(
+            teacher.id,
             hashed_refresh_token
         );
-        if (!updateUser) {
+        if (!updateteacher) {
             throw new InternalServerErrorException("Tokenni saqlashda xatolik");
         }
         res.cookie("refresh_token", tokens.refresh_token, {
-            maxAge: Number(process.env.COOKIE_TIME),
+            maxAge: Number(process.env.COOKIE_TIME) || 15 * 24 * 60 * 60 * 1000, // Ensure maxAge is a valid number
             httpOnly: true,
         });
         const response = {
-            id: user.id,
+            id: teacher.id,
             access_token: tokens.access_token,
+            reshresh_token: tokens.refresh_token
         };
 
         return response;
     }
 
-    async signOut(userId : number, res: Response) {
-
-        const user = await this.prismaService.user.updateMany({
-            where: {
-                id: userId,
-                hashedToken: {
-                    not: null,
-                },
-            },
-            data: {
-                hashedToken: null,
-            },
-        });
-        
-        if(!user){
-            throw new ForbiddenException("Access Deied")
+    async signOut(teacherId: number, res: Response): Promise<{ message: string }> {
+        try {
+            const teacher = await this.teacherService.findOne(teacherId);
+            
+            if (!teacher) {
+                throw new ForbiddenException("Teacher not found");
+            }
+    
+            // Проверяем, есть ли refresh_token
+            if (!teacher.hashed_refresh_token) {
+                return { message: "Teacher already logged out" };
+            }
+    
+            // Удаляем refresh token из БД
+            await this.teacherService.updateRefreshToken(teacher.id, null);
+    
+            // Очищаем refresh_token из кук
+            res.clearCookie("refresh_token", {
+                httpOnly: true,
+                secure: true,
+                sameSite: "strict",
+            });
+    
+            return { message: "Teacher logged out successfully" };
+        } catch (error) {
+            console.error("Logout error:", error);
+            throw new ForbiddenException("Logout failed");
         }
-
-        res.clearCookie("refresh_token");
-
-        const response = {
-            message: "User logged out successfully",
-        };
-        return response;
     }
+    
+    
 
     async adminSignUp(createAdminDto: CreateAdminDto) {
         const candidate = await this.adminService.findByEmail(createAdminDto.email);
@@ -185,7 +193,7 @@ export class AuthService {
             throw new InternalServerErrorException("Tokenni saqlashda xatolik")
         }
         res.cookie("refresh_token", tokens.refresh_token, {
-            maxAge: 15 * 24 * 60 * 60 * 100,
+            maxAge: Number(process.env.COOKIE_TIME) || 15 * 24 * 60 * 60 * 1000, // Ensure maxAge is a valid number
             httpOnly: true
         })
         const response = {
@@ -196,30 +204,28 @@ export class AuthService {
 
         return response
     }
-    async AdminSignOut(refreshToken: string, res: Response) {
-        const adminData = await this.jwtService.verify(refreshToken, {
-            secret: process.env.REFRESH_TOKEN_KEY,
-        });
-        if (!adminData) {
-            throw new ForbiddenException("Admin not verified");
+    async AdminSignOut(adminId: number, res: Response) {
+        console.log("AdminSignOut called with ID:", adminId);
+    
+        // 1. Проверяем, есть ли админ с таким ID
+        const admin = await this.adminService.findOne(adminId);
+        if (!admin) {
+            throw new NotFoundException(`Admin with ID ${adminId} not found`);
         }
-        const hashed_refresh_token = null;
-        await this.adminService.updateRefreshToken(
-            adminData.id,
-            hashed_refresh_token
-        );
-
+    
+        // 2. Обнуляем hashed_refreshToken
+        await this.adminService.updateRefreshToken(adminId, null);
+    
+        // 3. Очищаем куки с токеном
         res.clearCookie("refresh_token");
-
-        const response = {
-            message: "Admin logged out successfully",
-        };
-        return response;
+    
+        return { message: "Admin logged out successfully" };
     }
+    
 
 
     async AdminRefreshToken(id: number, refreshToken: string, res: Response): Promise<ResponseFields> {
-        const decodedToken = await this.jwtService.decode(refreshToken);
+        const decodedToken = this.jwtService.verify(refreshToken, { secret: process.env.REFRESH_TOKEN_KEY }); // Verify token
 
         if (id != decodedToken["id"]) {
             throw new BadRequestException("Ruxsat etilmagan");
@@ -246,7 +252,7 @@ export class AuthService {
         );
 
         res.cookie("refresh_token", tokens.refresh_token, {
-            maxAge: 15 * 24 * 60 * 1000,
+            maxAge: 15 * 24 * 60 * 60 * 1000, // Corrected maxAge value
             httpOnly: true,
         });
         const response = {
@@ -257,38 +263,38 @@ export class AuthService {
     }
 
     async refreshToken(id: number, refreshToken: string, res: Response): Promise<ResponseFields> {
-        const decodedToken = await this.jwtService.decode(refreshToken);
+        const decodedToken = this.jwtService.verify(refreshToken, { secret: process.env.REFRESH_TOKEN_KEY }); // Verify token
         
         if (id != decodedToken["id"]) {
             throw new BadRequestException("Ruxsat etilmagan");
         }
 
-        const user = await this.userService.findOne(+id);
-        if (!user || !user.hashedToken) {
-            throw new BadRequestException("user not found");
+        const teacher = await this.teacherService.findOne(+id);
+        if (!teacher || !teacher.hashed_refresh_token) {
+            throw new BadRequestException("teacher not found");
         }
 
-        const tokenMatch = await bcrypt.compare(refreshToken, user.hashedToken);
+        const tokenMatch = await bcrypt.compare(refreshToken, teacher.hashed_refresh_token);
 
         if (!tokenMatch) {
             throw new ForbiddenException("Forbidden");
         }
 
-        const tokens = await this.getTokens(user);
+        const tokens = await this.getTokens(teacher);
 
         const hashed_refresh_token = await bcrypt.hash(tokens.refresh_token, 7);
 
-        await this.userService.updateRefreshToken(
-            user.id,
+        await this.teacherService.updateRefreshToken(
+            teacher.id,
             hashed_refresh_token
         );
 
         res.cookie("refresh_token", tokens.refresh_token, {
-            maxAge: 15 * 24 * 60 * 1000,
+            maxAge: 15 * 24 * 60 * 60 * 1000, // Corrected maxAge value
             httpOnly: true,
         });
         const response = {
-            id: user.id,
+            id: teacher.id,
             access_token: tokens.access_token,
         };
         return response;

@@ -7,8 +7,8 @@ export class CreateTeacherDto {
   @IsString()
   last_name: string;
 
-  @IsDate()
-  birthday: Date;
+  @IsString()
+  birthday: string;
 
   @IsOptional()
   @IsString()
@@ -17,7 +17,6 @@ export class CreateTeacherDto {
   @IsString()
   phone_number: string;
 
-  @IsDate()
   hire_date: Date;
 
   @IsEmail()

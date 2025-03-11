@@ -1,19 +1,25 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import { ValidationPipe } from "@nestjs/common";
+import { ConsoleLogger, ValidationPipe } from "@nestjs/common";
 import * as cookieParser from 'cookie-parser';
 
 async function start() {
   try {
     const PORT = process.env.PORT || 3030;
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule,{
+      logger : new ConsoleLogger({
+        colors:true,
+        prefix:"Exam",
+        
+      })
+    });
     app.use(cookieParser());
     app.useGlobalPipes(new ValidationPipe());
     app.enableCors({
       origin: "*",
       methods: "GET, HEAD, PUT, PATCH, POST, DELETE",
-      credentials:true //cookie va header
+      credentials: true //cookie va header
     });
     const config = new DocumentBuilder()
       .setTitle("Splay.uz")

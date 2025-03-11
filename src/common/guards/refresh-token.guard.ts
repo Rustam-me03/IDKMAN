@@ -1,24 +1,16 @@
-import { ExecutionContext, Injectable } from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
+import { Injectable, ExecutionContext, UnauthorizedException } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import { Observable } from "rxjs";
 
 @Injectable()
-export class RefreshTokenGuard extends AuthGuard("refresh-jwt") {
-  constructor(private reflector: Reflector) {
-    super();
-  }
-
-  canActivate(
-    context: ExecutionContext
-  ): boolean | Promise<boolean> | Observable<boolean> {
-    const isPublic = this.reflector.getAllAndOverride("isPublic", [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (isPublic) {
-      return true;
+export class RefreshTokenGuard extends AuthGuard("jwt-refresh") {
+    handleRequest(err, user, info, context: ExecutionContext) {
+        const request = context.switchToHttp().getRequest();
+        console.log("Cookies:", request.cookies);
+        console.log("Authorization Header:", request.headers.authorization);
+        
+        if (err || !user) {
+            throw new UnauthorizedException("Invalid or missing refresh token");
+        }
+        return user;
     }
-    return super.canActivate(context);
-  }
 }
