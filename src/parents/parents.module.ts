@@ -1,23 +1,12 @@
 import { Module } from '@nestjs/common';
-import { ParentsService } from './parents.service';
 import { ParentsController } from './parents.controller';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
+import { ParentsService } from './parents.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports:[PrismaModule],
   controllers: [ParentsController],
-  providers: [
-    {
-      provide: ParentsService,
-      useFactory: async () => {
-        try {
-          return new ParentsService();
-        } catch (error) {
-          console.error('Error creating ParentsService:', error);
-          throw error;
-        }
-      },
-    },
-  ],
+  providers: [ParentsService, PrismaService],
 })
 export class ParentsModule {}

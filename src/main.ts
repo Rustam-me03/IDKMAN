@@ -3,6 +3,7 @@ import { AppModule } from "./app.module";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { ConsoleLogger, ValidationPipe } from "@nestjs/common";
 import * as cookieParser from 'cookie-parser';
+import { AllExceptionsFilter } from "./logger/error.handling";
 
 async function start() {
   try {
@@ -16,6 +17,7 @@ async function start() {
     });
     app.use(cookieParser());
     app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalFilters(new AllExceptionsFilter)
     app.enableCors({
       origin: "*",
       methods: "GET, HEAD, PUT, PATCH, POST, DELETE",

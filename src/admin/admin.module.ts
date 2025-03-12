@@ -8,8 +8,8 @@ import { ConfigModule } from '@nestjs/config';
 import { TeacherService } from 'src/teacher/teacher.service';
 import { SuperAdminGuard } from 'src/common/guards/super-admin.guard';
 import { JwtRefreshStrategy } from 'src/common/strategies';
-import { JwtStrategy } from 'src/common/strategies/jwt.strategy';
 import { PrismaService } from '../prisma/prisma.service';
+import { JwtAdminStrategy } from 'src/common/strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -34,7 +34,7 @@ import { PrismaService } from '../prisma/prisma.service';
     JwtService,
     JwtRefreshStrategy,
     TeacherService,
-    JwtStrategy,
+    JwtAdminStrategy,
     SuperAdminGuard
   ],
   exports: [

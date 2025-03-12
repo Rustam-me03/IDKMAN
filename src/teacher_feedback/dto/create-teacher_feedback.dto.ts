@@ -1,7 +1,7 @@
-import { IsString, IsOptional, IsNumber } from 'class-validator';
+import { IsString, IsNumber } from 'class-validator';
 
 export class CreateTeacherFeedbackDto {
- @IsNumber()
+  @IsNumber()
   teacher_id: number;
 
   @IsNumber()

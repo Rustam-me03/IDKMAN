@@ -1,14 +1,14 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { CreateGruopPreschoolerDto } from './dto/create-gruop_preschooler.dto';
-import { UpdateGruopPreschoolerDto } from './dto/update-gruop_preschooler.dto';
+
 import { GroupPreschoolerService } from './gruop_preschooler.service';
+import { CreateGroupPreschoolerDto } from './dto';
 
 @Controller('gruop-preschooler')
 export class GruopPreschoolerController {
   constructor(private readonly groupPreschoolerService: GroupPreschoolerService) {}
 
   @Post()
-  create(@Body() createGruopPreschoolerDto: CreateGruopPreschoolerDto) {
+  create(@Body() createGruopPreschoolerDto: CreateGroupPreschoolerDto) {
     return this.groupPreschoolerService.create(createGruopPreschoolerDto);
   }
 

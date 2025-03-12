@@ -1,4 +1,4 @@
 import { PartialType } from '@nestjs/swagger';
-import { CreateGruopPreschoolerDto } from './create-gruop_preschooler.dto';
+import { CreateGroupPreschoolerDto } from './create-gruop_preschooler.dto';
 
-export class UpdateGruopPreschoolerDto extends PartialType(CreateGruopPreschoolerDto) {}
+export class UpdateGruopPreschoolerDto extends PartialType(CreateGroupPreschoolerDto) {}

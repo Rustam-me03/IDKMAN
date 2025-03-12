@@ -1,23 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ParentAndPresschoolerService } from './parent_and_presschooler.service';
+
+import { PrismaService } from 'src/prisma/prisma.service';
 import { ParentAndPresschoolerController } from './parent_and_presschooler.controller';
-import { PrismaModule } from 'src/prisma/prisma.module';
+import { ParentAndPreschoolerService } from './parent_and_presschooler.service';
 
 @Module({
-  imports: [PrismaModule],
   controllers: [ParentAndPresschoolerController],
-  providers: [
-    {
-      provide: ParentAndPresschoolerService,
-      useFactory: async () => {
-        try {
-          return new ParentAndPresschoolerService();
-        } catch (error) {
-          console.error('Error creating ParentAndPresschoolerService:', error);
-          throw error;
-        }
-      },
-    },
-  ],
+  providers: [ParentAndPreschoolerService, PrismaService],
 })
-export class ParentAndPresschoolerModule {}
+export class ParentAndPreschoolModule {}

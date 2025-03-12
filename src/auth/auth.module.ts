@@ -9,9 +9,9 @@ import { TeacherModule } from "src/teacher/teacher.module";
 import { AdminService } from '../admin/admin.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { JwtStrategy } from "src/common/strategies/jwt.strategy";
 import { AdminRefreshTokenGuard } from "src/common/guards";
 import { SuperAdminRefreshTokenCookieStrategy } from "src/common/strategies/admin-refresh-token.strategy copy";
+import { JwtAdminStrategy } from "src/common/strategies/jwt.strategy";
 
 @Module({
     imports: [
@@ -42,7 +42,7 @@ import { SuperAdminRefreshTokenCookieStrategy } from "src/common/strategies/admi
         AdminService, 
         JwtService, 
         PrismaService, 
-        JwtStrategy, 
+        JwtAdminStrategy, 
         JwtModule, 
         AdminRefreshTokenGuard, 
         SuperAdminRefreshTokenCookieStrategy

@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateParentAndPresschoolerDto } from './create-parent_and_presschooler.dto';
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateParentAndPreschoolDto } from './create-parent_and_presschooler.dto';
 
-export class UpdateParentAndPresschoolerDto extends PartialType(CreateParentAndPresschoolerDto) {}
+export class UpdateParentAndPreschoolDto extends PartialType(CreateParentAndPreschoolDto) {}

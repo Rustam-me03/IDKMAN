@@ -1,6 +1,6 @@
 import { IsNumber } from 'class-validator';
 
-export class CreateGruopPreschoolerDto {
+export class CreateGroupPreschoolerDto {
   @IsNumber()
   group_id: number;
 

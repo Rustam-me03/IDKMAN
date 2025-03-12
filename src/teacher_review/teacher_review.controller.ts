@@ -30,4 +30,6 @@ export class TeacherReviewController {
   remove(@Param('id') id: string) {
     return this.teacherReviewService.delete(+id);
   }
+
+ 
 }

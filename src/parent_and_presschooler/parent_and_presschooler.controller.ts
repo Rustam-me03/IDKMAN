@@ -1,14 +1,14 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ParentAndPresschoolerService } from './parent_and_presschooler.service';
-import { CreateParentAndPresschoolerDto } from './dto/create-parent_and_presschooler.dto';
-import { UpdateParentAndPresschoolerDto } from './dto/update-parent_and_presschooler.dto';
+import { CreateParentAndPreschoolDto, UpdateParentAndPreschoolDto } from './dto';
+import { ParentAndPreschoolerService } from './parent_and_presschooler.service';
+
 
 @Controller('parent-and-presschooler')
 export class ParentAndPresschoolerController {
-  constructor(private readonly parentAndPresschoolerService: ParentAndPresschoolerService) {}
+  constructor(private readonly parentAndPresschoolerService: ParentAndPreschoolerService) { }
 
   @Post()
-  create(@Body() createParentAndPresschoolerDto: CreateParentAndPresschoolerDto) {
+  create(@Body() createParentAndPresschoolerDto: CreateParentAndPreschoolDto) {
     return this.parentAndPresschoolerService.create(createParentAndPresschoolerDto);
   }
 
@@ -23,7 +23,8 @@ export class ParentAndPresschoolerController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateParentAndPresschoolerDto: UpdateParentAndPresschoolerDto) {
+  update(@Param('id') id: string, @Body() updateParentAndPresschoolerDto: UpdateParentAndPreschoolDto
+  ) {
     return this.parentAndPresschoolerService.update(+id, updateParentAndPresschoolerDto);
   }
 

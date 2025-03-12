@@ -12,7 +12,7 @@ export class AttendanceController {
     return this.attendanceService.create(createAttendanceDto);
   }
 
-  @Get()
+  @Get("all")
   findAll() {
     return this.attendanceService.findAll();
   }

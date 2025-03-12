@@ -1,16 +1,17 @@
-import { IsInt, IsDateString, IsOptional } from 'class-validator';
+import { IsString, IsNumber, Matches, IsDate } from 'class-validator';
 
 export class CreateAttendanceDto {
-  @IsDateString()
+  @IsString()
   date: string;
 
-  @IsInt()
-  check_in_time: number;
+  @IsString()
+  @Matches(/^\d{2}:\d{2}:\d{2}$/, { message: 'Invalid check_in_time format. Use HH:mm:ss' })
+  check_in_time: string;
 
-  @IsInt()
-  check_out_time: number;
+  @IsString()
+  @Matches(/^\d{2}:\d{2}:\d{2}$/, { message: 'Invalid check_out_time format. Use HH:mm:ss' })
+  check_out_time: string;
 
-  @IsInt()
+  @IsNumber()
   preschooler_id: number;
 }
-

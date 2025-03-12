@@ -1,26 +1,44 @@
 import { Injectable } from '@nestjs/common';
-import { CreateParentDto } from './dto/create-parent.dto';
-import { UpdateParentDto } from './dto/update-parent.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateParentDto, UpdateParentDto } from './dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class ParentsService {
-  create(createParentDto: CreateParentDto) {
-    return 'This action adds a new parent';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createParentDto: CreateParentDto) {
+    const saltOrRounds = 10;
+    const hashedPassword = await bcrypt.hash(createParentDto.hashed_password, saltOrRounds);
+
+    return this.prisma.parent.create({
+      data: {
+        first_name: createParentDto.first_name,
+        last_name: createParentDto.last_name,
+        number: createParentDto.number,
+        email: createParentDto.email,
+        address: createParentDto.address,
+        hashed_password: hashedPassword,
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all parents`;
+  async findAll() {
+    return this.prisma.parent.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} parent`;
+  async findOne(id: number) {
+    return this.prisma.parent.findUnique({ where: { id } });
   }
 
-  update(id: number, updateParentDto: UpdateParentDto) {
-    return `This action updates a #${id} parent`;
+  async update(id: number, updateParentDto: UpdateParentDto) {
+    return this.prisma.parent.update({
+      where: { id },
+      data: updateParentDto,
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} parent`;
+  async remove(id: number) {
+    return this.prisma.parent.delete({ where: { id } });
   }
 }

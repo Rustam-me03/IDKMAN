@@ -90,11 +90,14 @@ export class AdminService {
   }
 
   async updateRefreshToken(id: number, hashed_refreshToken: string | null) {
+    console.log("Updating admin refresh token:", { id, hashed_refreshToken });
+
     const updatedAdmin = await this.prismaService.admin.update({
       where: { id },
       data: { hashed_refreshToken },
     });
 
+    console.log("Updated admin:", updatedAdmin);
     return updatedAdmin;
   }
 }

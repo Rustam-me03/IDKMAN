@@ -2,13 +2,13 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { TeacherService } from 'src/teacher/teacher.service';
+import { AdminService } from 'src/admin/admin.service';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
     constructor(
         private readonly configService: ConfigService,
-        private readonly teacherService: TeacherService,
+        private readonly adminService: AdminService,
     ) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -18,10 +18,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
 
     async validate(payload: { id: number }) {
-        const user = await this.teacherService.findOne(payload.id);
-        if (!user) {
-            throw new UnauthorizedException('Foydalanuvchi topilmadi yoki autentifikatsiya muvaffaqiyatsiz');
+        console.log("Admin JWT Payload:", payload); // 🔍 Логируем что приходит в токене
+
+        const admin = await this.adminService.findOne(payload.id);
+        if (!admin) {
+            throw new UnauthorizedException('Admin not found or authentication failed');
         }
-        return user; // Доступен как `request.user`
+        return admin; // Доступен как `req.user`
     }
 }

@@ -1,26 +1,73 @@
-import { Injectable } from '@nestjs/common';
-import { CreateParentAndPresschoolerDto } from './dto/create-parent_and_presschooler.dto';
-import { UpdateParentAndPresschoolerDto } from './dto/update-parent_and_presschooler.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateParentAndPreschoolDto, UpdateParentAndPreschoolDto } from './dto';
 
 @Injectable()
-export class ParentAndPresschoolerService {
-  create(createParentAndPresschoolerDto: CreateParentAndPresschoolerDto) {
-    return 'This action adds a new parentAndPresschooler';
+export class ParentAndPreschoolerService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createParentAndPreschoolDto: CreateParentAndPreschoolDto) {
+    const parent = await this.prisma.parent.findUnique({
+      where: { id: createParentAndPreschoolDto.parent_id },
+    });
+
+    if (!parent) {
+      throw new NotFoundException(`Parent with ID ${createParentAndPreschoolDto.parent_id} not found`);
+    }
+
+    const preschooler = await this.prisma.preschooler.findUnique({
+      where: { id: createParentAndPreschoolDto.preschooler_id },
+    });
+
+    if (!preschooler) {
+      throw new NotFoundException(`Preschooler with ID ${createParentAndPreschoolDto.preschooler_id} not found`);
+    }
+
+    return this.prisma.parentAndPreschool.create({
+      data: {
+        parent_id: createParentAndPreschoolDto.parent_id,
+        preschooler_id: createParentAndPreschoolDto.preschooler_id,
+        relation: createParentAndPreschoolDto.relation,
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all parentAndPresschooler`;
+
+  async findAll() {
+    return this.prisma.parentAndPreschool.findMany({
+      include: {
+        parent: true,
+        preschooler: true,
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} parentAndPresschooler`;
+  async findOne(id: number) {
+    const record = await this.prisma.parentAndPreschool.findUnique({
+      where: { id },
+      include: {
+        parent: true,
+        preschooler: true,
+      },
+    });
+    if (!record) {
+      throw new NotFoundException(`ParentAndPreschool with ID ${id} not found`);
+    }
+    return record;
   }
 
-  update(id: number, updateParentAndPresschoolerDto: UpdateParentAndPresschoolerDto) {
-    return `This action updates a #${id} parentAndPresschooler`;
+  async update(id: number, dto: UpdateParentAndPreschoolDto) {
+    return this.prisma.parentAndPreschool.update({
+      where: { id },
+      data: {
+        preschooler_id: dto.preschooler_id,
+        parent_id: dto.parent_id,
+        relation: dto.relation,
+      },
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} parentAndPresschooler`;
+  async remove(id: number) {
+    return this.prisma.parentAndPreschool.delete({ where: { id } });
   }
 }

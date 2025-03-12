@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString, IsInt, IsDate } from "class-validator";
+import { IsNotEmpty, IsString, IsInt, IsDate, IsOptional } from "class-validator";
+import { Type } from "class-transformer";
 
 export class CreateGroupDto {
     @ApiProperty()
@@ -18,17 +19,13 @@ export class CreateGroupDto {
     max_age: number;
 
     @ApiProperty()
+    @Type(() => Date) 
     @IsDate()
     @IsNotEmpty()
     created_at: Date;
 
-    @ApiProperty()
-    @IsInt()
+    @ApiProperty({ type: [Number] }) // Теперь это массив ID учителей
     @IsNotEmpty()
-    main_teacher_id: number;
-
-    @ApiProperty()
-    @IsInt()
-    @IsNotEmpty()
-    support_teacher_id: number;
+    @IsInt({ each: true }) 
+    teacher_ids: number[];
 }

@@ -1,11 +1,11 @@
-import {  IsInt, IsString, IsDate, IsNumber } from 'class-validator';
+import { IsInt, IsString, IsDateString } from 'class-validator';
 
 export class CreateTeacherReviewDto {
-  @IsNumber()
-  teacher_id: bigint;
+  @IsInt()
+  teacher_id: number;
 
-  @IsNumber()
-  parent_id: bigint;
+  @IsInt()
+  parent_id: number;
 
   @IsString()
   message: string;
@@ -13,6 +13,6 @@ export class CreateTeacherReviewDto {
   @IsInt()
   rating: number;
 
-  @IsDate()
-  written_at: Date;
+  @IsDateString()
+  written_at: string;
 }

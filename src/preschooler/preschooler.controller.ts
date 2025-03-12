@@ -7,20 +7,21 @@ import { UpdatePreschoolerDto } from './dto/update-preschooler.dto';
 export class PreschoolerController {
   constructor(private readonly preschoolerService: PreschoolerService) {}
 
-  @Post()
+  @Post("create")
   create(@Body() createPreschoolerDto: CreatePreschoolerDto) {
     return this.preschoolerService.create(createPreschoolerDto);
   }
 
-  @Get()
+  @Get("all")
   findAll() {
     return this.preschoolerService.findAll();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.preschoolerService.findOne(+id);
+    return this.preschoolerService.findOne(Number(id)); // ✅ Преобразуем в `number`
   }
+  
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePreschoolerDto: UpdatePreschoolerDto) {

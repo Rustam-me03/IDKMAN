@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, HttpCode, HttpStatus, Res, UseGuards, UnauthorizedException, Req, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Body, HttpCode, HttpStatus, Res, UseGuards, UnauthorizedException, Req, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiOperation } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { AdminSignInDto, CreateAdminDto } from '../admin/dto';
 import { ResponseFields } from '../common/types';
 import { RefreshTokenGuard } from '../common/guards';
@@ -12,12 +12,16 @@ import { UpdateTeacherDto } from 'src/teacher/dto/update-teacher.dto';
 import { TeacherSignInDto } from 'src/teacher/dto/sign_in-teacher.dto';
 import { GetCurrentUser, GetCurrentUserId } from 'src/common/decorators';
 import { TeacherService } from 'src/teacher/teacher.service';
+import { JwtService } from '@nestjs/jwt';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly teacherService: TeacherService
+    private readonly teacherService: TeacherService,
+    private readonly jwtService: JwtService
+
   ) { }
 
   @ApiOperation({ summary: "Yangi foydalanuvchilarni ro'yxatdan o'tkazish" })
@@ -35,28 +39,31 @@ export class AuthController {
   ): Promise<ResponseFields> {
     return this.authService.signIn(teacherSignInDto, res);
   }
+
   @UseGuards(RefreshTokenGuard)
   @Get("sign-out")
   async signout(
-      @GetCurrentUserId() teacherId: number | null,
-      @Res({ passthrough: true }) res: Response
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
   ) {
-      if (!teacherId) {
-          return { message: "No user to log out" };
-      }
-  
-      const teacher = await this.teacherService.findOne(teacherId);
-      if (!teacher || !teacher.hashed_refresh_token) {
-          throw new ForbiddenException("Invalid or missing refresh token");
-      }
-  
-      await this.teacherService.updateRefreshToken(teacher.id, null);
-      res.clearCookie("refresh_token");
-  
-      return { message: "Teacher logged out successfully" };
-  }
-  
+    const refreshToken = req.cookies?.refresh_token;
+    if (!refreshToken) {
+      throw new UnauthorizedException("No refresh token provided");
+    }
 
+    const decodedToken = this.jwtService.verify(refreshToken, { secret: process.env.REFRESH_TOKEN_KEY });
+    const teacherId = decodedToken.id;
+
+    const teacher = await this.teacherService.findOne(teacherId);
+    if (!teacher || !teacher.hashed_refresh_token) {
+      throw new ForbiddenException("Invalid or missing refresh token");
+    }
+
+    await this.teacherService.updateRefreshToken(teacher.id, null);
+    res.clearCookie("refresh_token");
+
+    return { message: "Teacher logged out successfully" };
+  }
 
   @UseGuards(RefreshTokenGuard)
   @Get("refresh")
@@ -85,20 +92,19 @@ export class AuthController {
     return this.authService.adminSignIn(adminSignInDto, res);
   }
 
-  @Post("admin/sign-out")
-  async adminSignOut(@Req() req: any, @Res() res: Response) { // Changed type of req to any
-    const adminId = req.user?.id;
-    console.log("Admin ID from request:", adminId);
-
-    if (!adminId || isNaN(adminId)) { // Added check for valid adminId
-      throw new UnauthorizedException("Invalid admin ID");
-    }
-
-    return this.authService.AdminSignOut(adminId, res);
+  @Post('admin/sign-out')
+  @UseGuards(AuthGuard('jwt-admin')) // Use strategy for admin
+  async adminSignOut(@Req() req: any, @Res({ passthrough: true }) res: Response) { // Changed type of req to any
+      console.log("Decoded Admin:", req.user); // Check that req.user exists
+  
+      const adminId = req.user?.id;
+      if (!adminId || isNaN(adminId)) { // Added check for valid adminId
+          throw new UnauthorizedException("Invalid admin ID");
+      }
+  
+      return this.authService.adminSignOut(req, res);
   }
-
-
-
+  
   @UseGuards(AdminRefreshTokenGuard)
   @Get("admin/refresh")
   AdminRefresh(
