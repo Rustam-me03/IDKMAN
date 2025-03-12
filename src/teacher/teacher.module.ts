@@ -3,6 +3,7 @@ import { TeacherService } from './teacher.service';
 import { TeacherController } from './teacher.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { AdminService } from 'src/admin/admin.service';
 
 @Module({
   imports: [PrismaModule],
@@ -20,6 +21,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
       },
       inject: [PrismaService],
     },
+    AdminService,
   ],
   exports: [TeacherService], // Export TeacherService
 })

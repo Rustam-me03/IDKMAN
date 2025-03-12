@@ -15,25 +15,21 @@ export class TeacherController {
     return this.teacherService.create(createTeacherDto);
   }
   
-  @UseGuards(SuperAdminGuard, AdminGuard)
   @Get("all")
   findAll() {
     return this.teacherService.findAll();
   }
 
-  @UseGuards(TeacherSelfGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.teacherService.findOne(+id);
   }
 
-  @UseGuards(TeacherSelfGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateTeacherDto: UpdateTeacherDto) {
     return this.teacherService.update(+id, updateTeacherDto);
   }
 
-  @UseGuards(SuperAdminGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.teacherService.remove(+id);
