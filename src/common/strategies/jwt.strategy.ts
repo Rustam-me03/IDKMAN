@@ -18,9 +18,11 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
     }
 
     async validate(payload: { id: number }) {
-        console.log("Admin JWT Payload:", payload); // 🔍 Логируем что приходит в токене
+        console.log("🔍 Admin JWT Payload:", payload); // Логируем токен
 
         const admin = await this.adminService.findOne(payload.id);
+        console.log("✅ Найденный админ:", admin); // Проверяем, что админ найден
+
         if (!admin) {
             throw new UnauthorizedException('Admin not found or authentication failed');
         }

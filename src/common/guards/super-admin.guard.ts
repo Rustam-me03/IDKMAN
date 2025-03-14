@@ -3,30 +3,25 @@ import { AdminService } from 'src/admin/admin.service';
 
 @Injectable()
 export class SuperAdminGuard implements CanActivate {
-    constructor(private adminService: AdminService) {} // Corrected service injection
+    constructor(private readonly adminService: AdminService) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
         const user = request.user;
 
         if (!user) {
-            throw new UnauthorizedException('Foydalanuvchi topilmadi');
+            throw new UnauthorizedException('Пользователь не найден');
         }
 
-        const refreshedUser = await this.refreshUser(user);
+        const admin = await this.adminService.findOne(user.id);
+        if (!admin) {
+            throw new UnauthorizedException('Администратор не найден');
+        }
 
-        if (!refreshedUser || !refreshedUser.is_creator) {
-            throw new ForbiddenException("Sizda ruxsat yo'q");
+        if (!admin.is_creator) {
+            throw new ForbiddenException('У вас нет доступа');
         }
 
         return true;
-    }
-
-    private async refreshUser(user: any): Promise<any> {
-        const foundUser = await this.adminService.findOne(user.id); // Corrected service method call
-        if (!foundUser) {
-            throw new UnauthorizedException("Foydalanuvchi ma'lumotlari yangilanmadi");
-        }
-        return foundUser;
     }
 }

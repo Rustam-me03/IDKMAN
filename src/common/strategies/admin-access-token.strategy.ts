@@ -1,21 +1,39 @@
 import { PassportStrategy } from "@nestjs/passport";
 import { Request } from "express";
-import { ExtractJwt, Strategy } from "passport-jwt";
-import { JwtAdminPayload } from "../types";
-import { Injectable } from "@nestjs/common";
+import { JwtFromRequestFunction, Strategy } from "passport-jwt";
+import { AdminJwtPayloadWithRefreshToken, JwtAdminPayload } from "../types";
+import { ForbiddenException, Injectable } from "@nestjs/common";
+import { ConfigService } from '@nestjs/config';
+
+export const AdminCookieExtractor: JwtFromRequestFunction = (req: Request) => {
+    if (req && req.cookies) {
+        return req.cookies["refresh_token"];
+    }
+    return null;
+};
 
 @Injectable()
-export class AdminAccessTokenStrategy extends PassportStrategy(
+export class AdminRefreshTokenCookieStrategy extends PassportStrategy(
     Strategy,
-    "access-jwt"
+    "admin-access-jwt"
 ) {
-    constructor() {
+    constructor(private readonly configService: ConfigService) {
         super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            secretOrKey: process.env.ACCESS_TOKEN_KEY!,
+            jwtFromRequest: AdminCookieExtractor,
+            secretOrKey: configService.get<string>('REFRESH_TOKEN_KEY'),
+            passReqToCallback: true,
         });
     }
-    validate(payload: JwtAdminPayload): JwtAdminPayload {
-        return payload;
+
+    validate(req: Request, payload: JwtAdminPayload): AdminJwtPayloadWithRefreshToken {
+        const refreshToken = req.cookies.refresh_token;
+        
+        if (!refreshToken) {
+            throw new ForbiddenException("Refresh token noto'g'ri");
+        }
+        if(payload.is_creator != true){
+            throw new ForbiddenException("Sizga ruxsat yo'q");
+        }
+        return { ...payload, refreshToken };
     }
 }

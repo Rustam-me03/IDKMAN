@@ -19,7 +19,7 @@ import { TeacherService } from "src/teacher/teacher.service";
 import { CreateTeacherDto } from "src/teacher/dto/create-teacher.dto";
 import { TeacherSignInDto } from "src/teacher/dto/sign_in-teacher.dto";
 import { Teacher } from "@prisma/client";
-
+import { MailService } from "src/mail/mail.service";
 
 @Injectable()
 export class AuthService {
@@ -27,7 +27,8 @@ export class AuthService {
         private readonly teacherService: TeacherService,
         private readonly adminService: AdminService,
         private readonly jwtService: JwtService,
-        private readonly prismaService: PrismaService
+        private readonly prismaService: PrismaService,
+
     ) { }
 
     async getTokens(teacher: Teacher): Promise<Tokens> {
@@ -60,6 +61,8 @@ export class AuthService {
             throw new BadRequestException("Bunday foydalanuvchi mavjud");
         }
         const newteacher = await this.teacherService.create(createTeacherDto);
+
+
 
         const response = {
             message:
@@ -128,7 +131,7 @@ export class AuthService {
             throw new ForbiddenException("Invalid or missing refresh token");
         }
 
-        await this.teacherService.updateRefreshToken(teacher.id, null);
+        await this.teacherService.updateRefreshToken(teacher.id, null as any);
         res.clearCookie("refresh_token");
 
         return { message: "Teacher logged out successfully" };
@@ -196,49 +199,39 @@ export class AuthService {
     }
 
 
-    async adminSignOut(req: Request, res: Response) {
-        try {
-            const refreshToken = req.cookies?.refresh_token;
-            if (!refreshToken) {
-                throw new BadRequestException("No refresh token provided");
-            }
-
-            const decodedToken = this.jwtService.verify(refreshToken, { secret: process.env.REFRESH_TOKEN_KEY });
-
-            console.log("Decoded token:", decodedToken);
-
-            const adminId = decodedToken.id;
-            if (!adminId || isNaN(adminId)) { // Added check for valid adminId
-                throw new UnauthorizedException("Invalid admin ID");
-            }
-
-            const admin = await this.adminService.findOne(adminId);
-            if (!admin) {
-                throw new NotFoundException("Admin not found");
-            }
-
-            // Clear refresh token in DB
-            await this.adminService.updateRefreshToken(admin.id, null);
-
-            // Clear refresh token from cookies
-            res.clearCookie("refresh_token", {
-                httpOnly: true,
-                secure: true,
-                sameSite: "strict",
-            });
-
-            return { message: "Admin logged out successfully" };
-        } catch (error) {
-            console.error("Admin sign-out error:", error);
-            throw new ForbiddenException("Logout failed");
+    async adminSignOut(refreshToken: string | undefined, res: Response) {
+        if (!refreshToken) {
+            throw new UnauthorizedException("Refresh token not provided");
         }
+
+        let decodedToken;
+        try {
+            decodedToken = this.jwtService.verify(refreshToken, { secret: process.env.REFRESH_TOKEN_KEY });
+        } catch (error) {
+            throw new UnauthorizedException("Invalid or expired token");
+        }
+
+        const admin = await this.adminService.findOne(decodedToken.id);
+        if (!admin || !admin.hashed_refreshToken) {
+            throw new NotFoundException("Admin not found or no stored refresh token");
+        }
+
+        const tokenMatch = await bcrypt.compare(refreshToken, admin.hashed_refreshToken);
+        if (!tokenMatch) {
+            throw new ForbiddenException("Invalid token");
+        }
+
+        await this.adminService.updateRefreshToken(admin.id, null);
+        res.clearCookie("refresh_token");
+
+        return { message: "Admin logged out successfully" };
     }
 
 
+    async AdminRefreshToken(req: Request, res: Response): Promise<ResponseFields> {
+        console.log("Cookies:", req.cookies);
+        const refreshToken = req.cookies?.refresh_token;
 
-
-
-    async AdminRefreshToken(p0: number, refreshToken: string, res: Response): Promise<ResponseFields> {
         if (!refreshToken) {
             throw new UnauthorizedException("No refresh token provided");
         }
@@ -246,28 +239,27 @@ export class AuthService {
         let decodedToken;
         try {
             decodedToken = this.jwtService.verify(refreshToken, { secret: process.env.REFRESH_TOKEN_KEY });
+            console.log("Decoded token:", decodedToken);
         } catch (error) {
-            throw new UnauthorizedException("Invalid token");
+            throw new UnauthorizedException("Invalid or expired token");
         }
 
-        const adminId = decodedToken.id;
-        if (!adminId) {
-            throw new BadRequestException("Invalid token structure");
-        }
-
-        const admin = await this.adminService.findOne(adminId);
+        const admin = await this.adminService.findOne(decodedToken.id);
         if (!admin || !admin.hashed_refreshToken) {
-            throw new BadRequestException("Admin not found");
+            throw new BadRequestException("Admin not found or no stored refresh token");
         }
+
+        console.log("Stored hashed_refreshToken:", admin.hashed_refreshToken);
 
         const tokenMatch = await bcrypt.compare(refreshToken, admin.hashed_refreshToken);
         if (!tokenMatch) {
-            throw new ForbiddenException("Forbidden");
+            throw new ForbiddenException("Invalid token");
         }
 
         const tokens = await this.adminService.getToken(admin);
-        const hashed_refresh_token = await bcrypt.hash(tokens.refresh_token, 7);
+        console.log("New refreshToken:", tokens.refresh_token);
 
+        const hashed_refresh_token = await bcrypt.hash(tokens.refresh_token, 7);
         await this.adminService.updateRefreshToken(admin.id, hashed_refresh_token);
 
         res.cookie("refresh_token", tokens.refresh_token, {
@@ -282,33 +274,65 @@ export class AuthService {
     }
 
 
-    async refreshToken(id: number, refreshToken: string, res: Response): Promise<ResponseFields> {
-        const decodedToken = this.jwtService.verify(refreshToken, { secret: process.env.REFRESH_TOKEN_KEY });
+    async refreshToken(teacherId: number, refreshToken: string, req: Request, res: Response) {
+        console.log("✅ [AuthService] Extracted Cookies:", req.cookies);
 
-        if (Number(id) !== decodedToken["id"]) {
-            throw new BadRequestException("Ruxsat etilmagan");
+        if (!refreshToken) {
+            console.error("❌ Ошибка: Refresh token отсутствует в куках!");
+            throw new UnauthorizedException("Токен отсутствует или повреждён");
         }
 
-        const teacher = await this.teacherService.findOne(Number(id));
+        let decodedToken;
+        try {
+            decodedToken = this.jwtService.verify(refreshToken, { secret: process.env.REFRESH_TOKEN_KEY });
+            console.log("✅ [AuthService] Decoded Token:", decodedToken);
+        } catch (error) {
+            console.error("❌ Ошибка: Невалидный или просроченный refresh-токен!", error.message);
+            throw new UnauthorizedException("Токен недействителен или устарел");
+        }
+
+        const teacher = await this.teacherService.findOne(decodedToken.id);
         if (!teacher || !teacher.hashed_refresh_token) {
-            throw new BadRequestException("teacher not found");
+            console.error("❌ Ошибка: Учитель не найден или у него нет refresh-токена");
+            throw new BadRequestException("Учитель не найден или нет refresh-токена");
         }
 
         const tokenMatch = await bcrypt.compare(refreshToken, teacher.hashed_refresh_token);
         if (!tokenMatch) {
-            throw new ForbiddenException("Forbidden");
+            console.error("❌ Ошибка: Refresh-токен не совпадает с сохранённым хешем!");
+            throw new ForbiddenException("Неверный токен");
         }
 
-        const tokens = await this.getTokens(teacher);
-        const hashed_refresh_token = await bcrypt.hash(tokens.refresh_token, 7);
+        console.log("✅ [AuthService] Refresh-токен успешно прошёл валидацию!");
 
+        // Генерация нового access и refresh токена
+        const tokens = await this.teacherService.getToken(teacher);
+        console.log("✅ [AuthService] Новый refreshToken:", tokens.refresh_token);
+
+        const hashed_refresh_token = await bcrypt.hash(tokens.refresh_token, 7);
         await this.teacherService.updateRefreshToken(teacher.id, hashed_refresh_token);
 
         res.cookie("refresh_token", tokens.refresh_token, {
-            maxAge: 15 * 24 * 60 * 60 * 1000,
+            maxAge: 15 * 24 * 60 * 60 * 1000, // 15 дней
             httpOnly: true,
+            secure: process.env.NODE_ENV === "production", // Только HTTPS в продакшене
         });
 
-        return { id: teacher.id, access_token: tokens.access_token };
+        return {
+            id: teacher.id,
+            access_token: tokens.access_token,
+        };
+    }
+    async findByRefreshToken(refreshToken: string) {
+        const admins = await this.prismaService.admin.findMany({
+            select: { id: true, hashed_refreshToken: true }
+        });
+
+        for (const admin of admins) {
+            if (admin.hashed_refreshToken && (await bcrypt.compare(refreshToken, admin.hashed_refreshToken))) {
+                return admin;
+            }
+        }
+        return null;
     }
 }

@@ -41,7 +41,7 @@ export class AuthController {
   }
 
   @UseGuards(RefreshTokenGuard)
-  @Get("sign-out")
+  @Post("sign-out")
   async signout(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response
@@ -59,21 +59,30 @@ export class AuthController {
       throw new ForbiddenException("Invalid or missing refresh token");
     }
 
-    await this.teacherService.updateRefreshToken(teacher.id, null);
+    await this.teacherService.updateRefreshToken(teacher.id, null as any);
     res.clearCookie("refresh_token");
 
     return { message: "Teacher logged out successfully" };
   }
 
-  @UseGuards(RefreshTokenGuard)
   @Get("refresh")
-  refresh(
-    @GetCurrentUserId() teacherId: number,
-    @GetCurrentUser("refreshToken") refreshToken: string,
-    @Res({ passthrough: true }) res: Response
-  ): Promise<ResponseFields> {
-    return this.authService.refreshToken(+teacherId, refreshToken, res);
-  }
+    async refresh(
+        @GetCurrentUserId() teacherId: number,
+        @GetCurrentUser("refreshToken") refreshToken: string,
+        @Req() req: Request,  // 👈 Передаём req, чтобы видеть все cookies
+        @Res({ passthrough: true }) res: Response
+    ) {
+        console.log("✅ [AuthController] Teacher ID:", teacherId);
+        console.log("✅ [AuthController] Received Refresh Token:", refreshToken);
+        console.log("✅ [AuthController] All Cookies:", req.cookies);
+
+        if (!teacherId || !refreshToken) {
+            throw new BadRequestException("❌ Не переданы необходимые параметры (teacherId или refreshToken)");
+        }
+
+        return this.authService.refreshToken(teacherId, refreshToken, req, res);
+    }
+  
 
 
   @ApiOperation({ summary: "Yangi admin ro'yxatdan o'tkazish" })
@@ -93,26 +102,19 @@ export class AuthController {
   }
 
   @Post('admin/sign-out')
-  @UseGuards(AuthGuard('jwt-admin')) // Use strategy for admin
-  async adminSignOut(@Req() req: any, @Res({ passthrough: true }) res: Response) { // Changed type of req to any
-      console.log("Decoded Admin:", req.user); // Check that req.user exists
-  
-      const adminId = req.user?.id;
-      if (!adminId || isNaN(adminId)) { // Added check for valid adminId
-          throw new UnauthorizedException("Invalid admin ID");
-      }
-  
-      return this.authService.adminSignOut(req, res);
+  async adminSignOut(
+    @CookieGetter("refresh_token") refreshToken: string,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    return this.authService.adminSignOut(refreshToken, res);
   }
-  
-  @UseGuards(AdminRefreshTokenGuard)
+
   @Get("admin/refresh")
   AdminRefresh(
-    @GetCurrentUserId() id: number,
-    @GetCurrentUser("refreshToken") refreshToken: string,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response
   ): Promise<ResponseFields> {
-    return this.authService.AdminRefreshToken(+id, refreshToken, res);
+    return this.authService.AdminRefreshToken(req, res);
   }
 
 }

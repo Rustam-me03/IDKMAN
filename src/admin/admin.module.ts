@@ -7,21 +7,25 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule } from '@nestjs/config';
 import { TeacherService } from 'src/teacher/teacher.service';
 import { SuperAdminGuard } from 'src/common/guards/super-admin.guard';
-import { JwtRefreshStrategy } from 'src/common/strategies';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAdminStrategy } from 'src/common/strategies/jwt.strategy';
+import { JwtRefreshStrategy } from 'src/common/strategies/refresh-jwt.strategy';
+import { AccessTokenStrategy } from 'src/common/strategies';
+import { MailModule } from 'src/mail/mail.module';  // Добавь импорт MailModule
+import { MailService } from 'src/mail/mail.service'; // Добавь MailService
 
 @Module({
   imports: [
     PrismaModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    ConfigModule.forRoot({ isGlobal: true }) // Ensure ConfigModule is global
+    ConfigModule.forRoot({ isGlobal: true }),
+    MailModule // Добавь MailModule в imports
   ],
   controllers: [AdminController],
   providers: [
     {
       provide: AdminService,
-      useFactory: async (prismaService: PrismaService, jwtService: JwtService) => {
+      useFactory: async (prismaService: PrismaService, jwtService: JwtService, mailService: MailService) => {
         try {
           return new AdminService(prismaService, jwtService);
         } catch (error) {
@@ -29,19 +33,22 @@ import { JwtAdminStrategy } from 'src/common/strategies/jwt.strategy';
           throw error;
         }
       },
-      inject: [PrismaService, JwtService],
+      inject: [PrismaService, JwtService, MailService], // Добавь MailService в inject
     },
     JwtService,
     JwtRefreshStrategy,
     TeacherService,
     JwtAdminStrategy,
-    SuperAdminGuard
+    SuperAdminGuard,
+    AccessTokenStrategy,
+    MailService, // Добавь MailService в providers
   ],
   exports: [
     JwtService,
     AdminService,
     TeacherService,
-    SuperAdminGuard
+    SuperAdminGuard,
+    MailService // Добавь MailService в exports
   ]
 })
-export class AdminModule {}
+export class AdminModule { }

@@ -1,6 +1,7 @@
 import {
     BadRequestException,
     Injectable,
+    InternalServerErrorException,
     NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
@@ -8,10 +9,18 @@ import * as bcrypt from "bcrypt";
 import { CreateTeacherDto } from "./dto/create-teacher.dto";
 import { UpdateTeacherDto } from "./dto/update-teacher.dto";
 import { Teacher } from '@prisma/client';
+import { JwtService } from "@nestjs/jwt";
+import * as uuid from 'uuid'
+import { MailService } from "src/mail/mail.service";
 
 @Injectable()
 export class TeacherService {
-    constructor(private readonly prismaService: PrismaService) { }
+    constructor(
+        private readonly prismaService: PrismaService,
+        private readonly jwtService: JwtService,
+        private readonly mailSerivce: MailService
+
+    ) { }
 
     async create(createTeacherDto: CreateTeacherDto) {
         if (createTeacherDto.password !== createTeacherDto.confirm_password) {
@@ -24,11 +33,13 @@ export class TeacherService {
             throw new BadRequestException("Некорректный формат даты рождения");
         }
 
+        const verification = uuid.v4();
+
         const newTeacher = await this.prismaService.teacher.create({
             data: {
                 first_name: createTeacherDto.first_name,
                 last_name: createTeacherDto.last_name,
-                birthday,
+                birthday: createTeacherDto.birthday,
                 phone_number: createTeacherDto.phone_number,
                 gender: createTeacherDto.gender,
                 email: createTeacherDto.email,
@@ -38,8 +49,15 @@ export class TeacherService {
                 old_work: createTeacherDto.old_work ?? null,
                 avg_rating: createTeacherDto.avg_rating ?? null,
                 is_main: createTeacherDto.is_main ?? false,
+                verification
             },
         });
+
+        try {
+            await this.mailSerivce.sendMail(newTeacher);
+        } catch (error) {
+            throw new InternalServerErrorException("Xat yuborishda xatolik");
+        }
 
         return newTeacher;
     }
@@ -65,7 +83,10 @@ export class TeacherService {
 
         return await this.prismaService.teacher.update({
             where: { id },
-            data: updateTeacherDto,
+            data: {
+                ...updateTeacherDto,
+                birthday: updateTeacherDto.birthday ? updateTeacherDto.birthday.toISOString() : undefined,
+            },
         });
     }
 
@@ -82,6 +103,28 @@ export class TeacherService {
             data: { hashed_refresh_token: hashedToken },
         });
     }
+
+    async getToken(teacher: Teacher) {
+        const payload = {
+            id: teacher.id,
+            email: teacher.email,
+        };
+
+        // 🔥 Генерация access-токена (живет 15 минут)
+        const access_token = this.jwtService.sign(payload, {
+            secret: process.env.ACCESS_TOKEN_KEY,
+            expiresIn: "15m",
+        });
+
+        // 🔥 Генерация refresh-токена (живет 15 дней)
+        const refresh_token = this.jwtService.sign(payload, {
+            secret: process.env.REFRESH_TOKEN_KEY,
+            expiresIn: "15d",
+        });
+
+        return { access_token, refresh_token };
+    }
+
     async getTeacherRating(teacherId: number) {
         const reviews = await this.prismaService.teacherReview.findMany({
             where: { teacher_id: teacherId },
@@ -102,4 +145,34 @@ export class TeacherService {
             total_reviews: totalReviews,
         };
     }
+
+    async activate(link: string) {
+        if (!link) {
+            throw new BadRequestException("Activation link not found");
+        }
+
+        try {
+            const updateUser = await this.prismaService.teacher.update({
+                where: {
+                    verification: link,
+                    is_active: false, // Faqat aktivlanmagan foydalanuvchini tanlash
+                },
+                data: {
+                    is_active: true,
+                },
+                select: {
+                    id: true,
+                    is_active: true,
+                },
+            });
+
+            return {
+                message: "User activated successfully",
+                user: updateUser,
+            };
+        } catch (error) {
+            throw new BadRequestException("User already activated or not found");
+        }
+    }
+
 }

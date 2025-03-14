@@ -41,4 +41,6 @@ export class CreateTeacherDto {
 
   @IsBoolean()
   is_main: boolean;
+
+
 }

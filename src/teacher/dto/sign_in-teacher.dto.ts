@@ -6,7 +6,7 @@ export class TeacherSignInDto {
     @ApiProperty()
     @IsEmail()
     @IsNotEmpty()
-    email: string | undefined
+    email: string 
     
     @ApiProperty()
     @IsString()

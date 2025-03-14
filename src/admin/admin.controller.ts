@@ -1,20 +1,19 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateAdminDto, UpdateAdminDto } from './dto';
-import { AdminRefreshTokenGuard } from '../common/guards/admin-refresh-token.guard';
-import { SuperAdminGuard } from '../common/guards';
+import { AccessTokenGuard, SuperAdminGuard } from '../common/guards';
 
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @UseGuards(AdminRefreshTokenGuard)
+  @UseGuards(AccessTokenGuard)
   @Post()
   create(@Body() createAdminDto: CreateAdminDto) {
     return this.adminService.create(createAdminDto);
   }
 
-  @UseGuards(AdminRefreshTokenGuard)
+  @UseGuards(AccessTokenGuard)
   @Get('all')
   findAll() {
     console.log("idk")
@@ -22,19 +21,19 @@ export class AdminController {
     return this.adminService.findAll();
   }
 
-  @UseGuards(AdminRefreshTokenGuard)
+  @UseGuards(AccessTokenGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.adminService.findOne(+id);
   }
 
-  @UseGuards(AdminRefreshTokenGuard)
+  @UseGuards(AccessTokenGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAdminDto: UpdateAdminDto) {
     return this.adminService.update(+id, updateAdminDto);
   }
 
-  @UseGuards(AdminRefreshTokenGuard, SuperAdminGuard)
+  @UseGuards(AccessTokenGuard, SuperAdminGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.adminService.remove(+id);

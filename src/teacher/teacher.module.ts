@@ -4,25 +4,22 @@ import { TeacherController } from './teacher.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AdminService } from 'src/admin/admin.service';
+import { JwtService } from '@nestjs/jwt';
+import { MailService } from 'src/mail/mail.service'; // Import MailService
+import { MailModule } from 'src/mail/mail.module'; // Import MailModule
 
 @Module({
-  imports: [PrismaModule],
+  imports: [
+    PrismaModule, 
+    MailModule 
+  ],
   controllers: [TeacherController],
   providers: [
-    {
-      provide: TeacherService,
-      useFactory: async (prismaService: PrismaService) => {
-        try {
-          return new TeacherService(prismaService);
-        } catch (error) {
-          console.error('Error creating TeacherService:', error);
-          throw error;
-        }
-      },
-      inject: [PrismaService],
-    },
+    PrismaService,
     AdminService,
+    JwtService,
+    TeacherService,
   ],
-  exports: [TeacherService], // Export TeacherService
+  exports: [TeacherService], 
 })
-export class TeacherModule {}
+export class TeacherModule { }

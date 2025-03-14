@@ -2,9 +2,9 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAdminDto, UpdateAdminDto } from './dto';
-import { Admin } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { Admin } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -99,5 +99,17 @@ export class AdminService {
 
     console.log("Updated admin:", updatedAdmin);
     return updatedAdmin;
+  }
+  async findByRefreshToken(refreshToken: string) {
+    const admins = await this.prismaService.admin.findMany({
+      select: { id: true, hashed_refreshToken: true }
+    });
+
+    for (const admin of admins) {
+      if (admin.hashed_refreshToken && (await bcrypt.compare(refreshToken, admin.hashed_refreshToken))) {
+        return admin;
+      }
+    }
+    return null;
   }
 }

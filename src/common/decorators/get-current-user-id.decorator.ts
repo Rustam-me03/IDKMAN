@@ -1,8 +1,4 @@
-import {
-    createParamDecorator,
-    ExecutionContext,
-    ForbiddenException,
-} from "@nestjs/common";
+import { createParamDecorator, ExecutionContext } from "@nestjs/common";
 import { JwtPayload } from "../types";
 
 export const GetCurrentUserId = createParamDecorator(
@@ -10,8 +6,7 @@ export const GetCurrentUserId = createParamDecorator(
         const request = context.switchToHttp().getRequest();
         const user = request.user as JwtPayload;
 
-        console.log("user: ", user);
-        return user?.id || null; // Вместо ошибки возвращаем `null`
+        console.log("👤 Полученный пользователь:", user);
+        return user?.id || null; 
     }
 );
-

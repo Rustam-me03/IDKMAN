@@ -10,8 +10,10 @@ import { AdminService } from '../admin/admin.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminRefreshTokenGuard } from "src/common/guards";
-import { SuperAdminRefreshTokenCookieStrategy } from "src/common/strategies/admin-refresh-token.strategy copy";
 import { JwtAdminStrategy } from "src/common/strategies/jwt.strategy";
+import { AdminRefreshTokenCookieStrategy } from "src/common/strategies";
+import { MailService } from "src/mail/mail.service";
+import { MailModule } from "src/mail/mail.module";
 
 @Module({
     imports: [
@@ -35,6 +37,7 @@ import { JwtAdminStrategy } from "src/common/strategies/jwt.strategy";
         TeacherModule,
         PrismaModule,
         AdminModule,
+        MailModule
     ],
     controllers: [AuthController],
     providers: [
@@ -45,7 +48,8 @@ import { JwtAdminStrategy } from "src/common/strategies/jwt.strategy";
         JwtAdminStrategy, 
         JwtModule, 
         AdminRefreshTokenGuard, 
-        SuperAdminRefreshTokenCookieStrategy
+        AdminRefreshTokenCookieStrategy
+        
     ],
 })
 export class AuthModule {}
