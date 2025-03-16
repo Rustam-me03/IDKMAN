@@ -166,9 +166,9 @@ export class AuthService {
         if (!admin) {
             throw new UnauthorizedException('Invalid Email or password')
         }
-        // if (!admin.is_active) {
-        //     throw new UnauthorizedException('admin is not activate')
-        // }
+        if (!admin.is_active) {
+            throw new UnauthorizedException('admin is not activate')
+        }
         const validPassword = await bcrypt.compare(adminSignInDto.password, admin.hashed_password)
         if (!validPassword) {
             throw new UnauthorizedException('Invalid Email or password')
