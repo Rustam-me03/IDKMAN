@@ -43,14 +43,25 @@ model Preschooler {
   registration_date DateTime
   born_date         DateTime
   gender            String
+  balance           Decimal  @default(0.0)
 
   groupPreschoolers  GroupPreschooler[]
   attendances        Attendance[]
   eventRegistrations EventRegistration[]
   parentRelations    ParentAndPreschool[]
   TeacherFeedback    TeacherFeedback[]
+  points             Points[]
 
   @@map("preschooler")
+}
+
+
+model Points {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  points      Decimal  @default(0.0)
+  granted_at  DateTime @default(now())
+  User        Preschooler @relation(fields: [userId], references: [id])
 }
 
 model GroupPreschooler {

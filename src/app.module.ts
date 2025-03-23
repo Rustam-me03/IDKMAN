@@ -15,6 +15,7 @@ import { GruopPreschoolerModule } from './gruop_preschooler/gruop_preschooler.mo
 import { EventRegestrationModule } from './event_regestration/event_regestration.module';
 import { AuthModule } from './auth/auth.module';
 import { ParentAndPreschoolModule } from './parent_and_presschooler/parent_and_presschooler.module';
+import { PurchaseModule } from './purchase/purchase.module';
 
 @Module({
   imports: [
@@ -36,7 +37,8 @@ import { ParentAndPreschoolModule } from './parent_and_presschooler/parent_and_p
     PreschoolerModule,
     GruopPreschoolerModule,
     EventRegestrationModule,
-    AuthModule
+    AuthModule,
+    PurchaseModule
   ],
   controllers: [],
   providers: [],
