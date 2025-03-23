@@ -33,7 +33,7 @@ import { MailService } from 'src/mail/mail.service'; // Добавь MailService
           throw error;
         }
       },
-      inject: [PrismaService, JwtService, MailService], // Добавь MailService в inject
+      inject: [PrismaService, JwtService, MailService], 
     },
     JwtService,
     JwtRefreshStrategy,
@@ -41,14 +41,14 @@ import { MailService } from 'src/mail/mail.service'; // Добавь MailService
     JwtAdminStrategy,
     SuperAdminGuard,
     AccessTokenStrategy,
-    MailService, // Добавь MailService в providers
+    MailService,
   ],
   exports: [
     JwtService,
     AdminService,
     TeacherService,
     SuperAdminGuard,
-    MailService // Добавь MailService в exports
+    MailService 
   ]
 })
 export class AdminModule { }

@@ -9,7 +9,7 @@ import { AdminGuard } from 'src/common/guards/admin.guard';
 @Controller('teacher')
 export class TeacherController {
   constructor(private readonly teacherService: TeacherService) { }
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(AccessTokenGuard)
   @Post()
   create(@Body() createTeacherDto: CreateTeacherDto) {
     return this.teacherService.create(createTeacherDto);

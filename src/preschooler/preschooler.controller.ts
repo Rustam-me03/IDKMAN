@@ -1,12 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { PreschoolerService } from './preschooler.service';
 import { CreatePreschoolerDto } from './dto/create-preschooler.dto';
 import { UpdatePreschoolerDto } from './dto/update-preschooler.dto';
+import { AccessTokenGuard } from 'src/common/guards';
 
 @Controller('preschooler')
 export class PreschoolerController {
   constructor(private readonly preschoolerService: PreschoolerService) {}
-
+  @UseGuards(AccessTokenGuard)
   @Post("create")
   create(@Body() createPreschoolerDto: CreatePreschoolerDto) {
     return this.preschoolerService.create(createPreschoolerDto);
